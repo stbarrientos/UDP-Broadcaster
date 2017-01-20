@@ -1,29 +1,22 @@
-CC=  g++-4.9 --std=c++11
+CC = g++-4.9 --std=c++11
 DEBUG = -g
-CFLAGS = -c -Wall $(DEBUG)
-LFAGS = -Wall $(DEBUG)
+CFLAGS = -Wall -c
+LFLAGS = -Wall
 
 SRC_DIR = src
 BIN_DIR = bin
-OBJ_DIR = obj
 INCL_DIR = include
+OBJ_DIR = obj
+BIN_DIR = bin
 
-SENDER_OBJS = $(OBJ_DIR)/sender.o
-RECEIVER_OBJS = $(OBJ_DIR)/receiver.o
-SENDER = $(BIN_DIR)/sender
-RECEIVER = $(BIN_DIR)/receiver
+OBJECTS = $(OBJ_DIR)/main.o $(OBJ_DIR)/udp_bcaster.o
+MAIN = $(BIN_DIR)/udp_bcaster
 
-ALL: $(SENDER) $(RECEIVER)
+$(MAIN): $(OBJECTS)
+	$(CC) $(LFAGS) $(OBJECTS) -o $(MAIN)
 
-$(SENDER): $(SENDER_OBJS)
-	$(CC) $(LFLAGS) $(SENDER_OBJS) -o $(SENDER)
+$(OBJ_DIR)/main.o: $(SRC_DIR)/main.cpp $(INCL_DIR)/udp_bcaster.h
+	$(CC) $(CFLAGS) $(SRC_DIR)/main.cpp -o $(OBJ_DIR)/main.o
 
-$(RECEIVER): $(RECEIVER_OBJS)
-	$(CC) $(LFLAGS) $(RECEIVER_OBJS) -o $(RECEIVER)
-
-$(OBJ_DIR)/sender.o: $(SRC_DIR)/sender.cpp
-	$(CC) $(CFLAGS) $(SRC_DIR)/sender.cpp -o $(OBJ_DIR)/sender.o
-
-$(OBJ_DIR)/receiver.o: $(SRC_DIR)/receiver.cpp
-	$(CC) $(CFLAGS) $(SRC_DIR)/receiver.cpp -o $(OBJ_DIR)/receiver.o
-
+$(OBJ_DIR)/udp_bcaster.o: $(SRC_DIR)/udp_bcaster.cpp $(INCL_DIR)/udp_bcaster.h $(INCL_DIR)/exceptions.h
+	$(CC) $(CFLAGS) $(SRC_DIR)/udp_bcaster.cpp -o $(OBJ_DIR)/udp_bcaster.o
