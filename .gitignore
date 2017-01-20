@@ -1,0 +1,9 @@
+# Ignore all object files in the obj directory
+obj/*
+
+#ignore all binaries in the bin directory
+bin/*
+
+# Don't ignore .keep files in bin or obj, we want to preserve the directories
+!obj/.keep
+!bin/keep
