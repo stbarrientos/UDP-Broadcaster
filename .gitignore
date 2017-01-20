@@ -6,4 +6,4 @@ bin/*
 
 # Don't ignore .keep files in bin or obj, we want to preserve the directories
 !obj/.keep
-!bin/keep
+!bin/.keep
