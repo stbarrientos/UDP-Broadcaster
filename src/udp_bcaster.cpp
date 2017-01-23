@@ -15,6 +15,20 @@ UdpBcaster::~UdpBcaster() {}
 void UdpBcaster::Send(std::string destIP, int destPort, const char* sendString, int sendStringLen)
 {
 	InitSocket();
+	BuildSendAddress(destIP, destPort);
+	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mAddress, sizeof(mAddress)) != sendStringLen){
+		throw SendError();
+	}
+}
+
+void UdpBcaster::SendFile(std::string destIP, int destPort, std::string filePath)
+{
+
+}
+
+void UdpBcaster::Broadcast(std::string destIP, int destPort, const char* sendString, int sendStringLen)
+{
+	InitSocket();
 	SetBroadcastPermission();
 	BuildSendAddress(destIP, destPort);
 	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mAddress, sizeof(mAddress)) != sendStringLen){
@@ -32,6 +46,11 @@ void UdpBcaster::Receive(int port, char* buffer, int bufferLen)
 	if (recvfrom(mSocket, buffer, bufferLen, 0, (struct sockaddr*) &senderAddress, &senderLen) == -1){
 		throw ReceiveError();
 	}
+}
+
+void UdpBcaster::RecieveFile(int port, std::string destFilePath)
+{
+
 }
 
 void UdpBcaster::CloseSocket()

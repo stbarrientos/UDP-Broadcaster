@@ -8,7 +8,6 @@
 class UdpBcaster {
 
 public:
-
 	
 	UdpBcaster();
 	UdpBcaster(UdpBcaster&);
@@ -17,9 +16,12 @@ public:
 
 	// Data Sender
 	void Send(std::string, int, const char*, int);
+	void SendFile(std::string, int, std::string);
+	void Broadcast(std::string, int, const char*, int);
 
 	// Data Receiver
 	void Receive(int, char*, int);
+	void ReceiveFile(int, std::string);
 
 	// Close socket
 	void CloseSocket();
