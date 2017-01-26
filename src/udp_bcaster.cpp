@@ -48,7 +48,7 @@ void UdpBcaster::Receive(int port, char* buffer, int bufferLen)
 	}
 }
 
-void UdpBcaster::RecieveFile(int port, std::string destFilePath)
+void UdpBcaster::ReceiveFile(int port, std::string destFilePath)
 {
 
 }
@@ -64,7 +64,6 @@ void UdpBcaster::BuildSendAddress(std::string destIP, int destPort)
 	mAddress.sin_family = AF_INET;
 	mAddress.sin_addr.s_addr = inet_addr(destIP.c_str());
 	mAddress.sin_port = htons(destPort);
-	std::cout << "destIP: " << destIP << ", destPort: " << destPort << std::endl;
 }
 
 void UdpBcaster::BuildReceiveAddress(int port)
