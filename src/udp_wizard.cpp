@@ -6,13 +6,13 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "../include/udp_bcaster.h"
+#include "../include/udp_wizard.h"
 #include "../include/exceptions.h"
 
-UdpBcaster::UdpBcaster() {}
-UdpBcaster::~UdpBcaster() {}
+UdpWizard::UdpWizard() {}
+UdpWizard::~UdpWizard() {}
 
-void UdpBcaster::Send(std::string destIP, int destPort, const char* sendString, int sendStringLen)
+void UdpWizard::Send(std::string destIP, int destPort, const char* sendString, int sendStringLen)
 {
 	InitSocket();
 	BuildSendAddress(destIP, destPort);
@@ -21,12 +21,14 @@ void UdpBcaster::Send(std::string destIP, int destPort, const char* sendString, 
 	}
 }
 
-void UdpBcaster::SendFile(std::string destIP, int destPort, std::string filePath)
+void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 {
-
+	// First, prepare a datagram with the header and the first chunk of the file
+	// Wait for recipient response before sending the next file
+	// Repeat until all of the file has been sent
 }
 
-void UdpBcaster::Broadcast(std::string destIP, int destPort, const char* sendString, int sendStringLen)
+void UdpWizard::Broadcast(std::string destIP, int destPort, const char* sendString, int sendStringLen)
 {
 	InitSocket();
 	SetBroadcastPermission();
@@ -36,7 +38,8 @@ void UdpBcaster::Broadcast(std::string destIP, int destPort, const char* sendStr
 	}
 }
 
-void UdpBcaster::Receive(int port, char* buffer, int bufferLen)
+
+void UdpWizard::Receive(int port, char* buffer, int bufferLen)
 {
 	struct sockaddr_in senderAddress;
 	socklen_t senderLen = sizeof(senderAddress);
@@ -48,17 +51,20 @@ void UdpBcaster::Receive(int port, char* buffer, int bufferLen)
 	}
 }
 
-void UdpBcaster::ReceiveFile(int port, std::string destFilePath)
+void UdpWizard::ReceiveFile(std::string destFilePath, int port)
 {
-
+	// Listen for incoming packet
+	// Read the header to see how many packets to prepare for, and store the first chunk in the file specified
+	// Send message telling that packet has been received and listen for more messages
+	// Repeat until full file has been read
 }
 
-void UdpBcaster::CloseSocket()
+void UdpWizard::CloseSocket()
 {
 	close(mSocket);
 }
 
-void UdpBcaster::BuildSendAddress(std::string destIP, int destPort)
+void UdpWizard::BuildSendAddress(std::string destIP, int destPort)
 {
 	memset(&mAddress, 0, sizeof(mAddress));
 	mAddress.sin_family = AF_INET;
@@ -66,7 +72,7 @@ void UdpBcaster::BuildSendAddress(std::string destIP, int destPort)
 	mAddress.sin_port = htons(destPort);
 }
 
-void UdpBcaster::BuildReceiveAddress(int port)
+void UdpWizard::BuildReceiveAddress(int port)
 {
 	memset(&mAddress, 0, sizeof(mAddress));
 	mAddress.sin_family = AF_INET;
@@ -74,20 +80,20 @@ void UdpBcaster::BuildReceiveAddress(int port)
 	mAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 }
 
-void UdpBcaster::SetBroadcastPermission()
+void UdpWizard::SetBroadcastPermission()
 {
 	if (setsockopt(mSocket, SOL_SOCKET, SO_BROADCAST, (void*) &mBroadcastPermission, sizeof(mBroadcastPermission)) == -1){
 		throw SocketPermissionError();
 	}
 }
 
-void UdpBcaster::InitSocket()
+void UdpWizard::InitSocket()
 {
 	mSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (mSocket == -1) throw SocketInitError();
 }
 
-void UdpBcaster::BindSocket()
+void UdpWizard::BindSocket()
 {
 	if (bind(mSocket, (struct sockaddr*) &mAddress, sizeof(mAddress)) == -1){
 		throw SocketBindError();

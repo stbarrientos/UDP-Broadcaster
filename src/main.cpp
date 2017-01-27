@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
-#include "../include/udp_bcaster.h"
+#include "../include/udp_wizard.h"
 
 void validateSendArgs(int argc, char** argv);
 void validateRecvArgs(int argc, char** argv);
@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 {
 	if (argc > 1 && strcmp(argv[1], "send") == 0){
 		validateSendArgs(argc,argv);
-		UdpBcaster ub;
+		UdpWizard ub;
 		std::string data = "Hello World";
 		std::string ip = argv[2];
 		int port = std::stoi(argv[3]);
@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 		ub.CloseSocket();
 	} else if (argc > 1 && strcmp(argv[1], "recv") == 0){
 		validateRecvArgs(argc, argv);
-		UdpBcaster ub;
+		UdpWizard ub;
 		char buffer[512];
 		memset(&buffer, 0, 512);
 		int port = std::stoi(argv[2]);

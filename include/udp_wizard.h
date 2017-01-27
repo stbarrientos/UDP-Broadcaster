@@ -1,30 +1,43 @@
-#ifndef _UDP_BCASTER_H_
-#define _UDP_BCASTER_H_
+#ifndef _UDP_WIZARD_H_
+#define _UDP_WIZARD_H_
 
 #include <iostream>
 #include <string>
 #include <arpa/inet.h>
+#include <cstdint>
 
-class UdpBcaster {
+class UdpWizard {
 
 public:
 	
-	UdpBcaster();
-	UdpBcaster(UdpBcaster&);
-	UdpBcaster& operator=(UdpBcaster&);
-	~UdpBcaster();
+	UdpWizard();
+	UdpWizard(UdpWizard&);
+	UdpWizard& operator=(UdpWizard&);
+	~UdpWizard();
 
 	// Data Sender
 	void Send(std::string, int, const char*, int);
-	void SendFile(std::string, int, std::string);
+	void SendFile(std::string filePath, std::string destIP, int destPort);
 	void Broadcast(std::string, int, const char*, int);
 
 	// Data Receiver
 	void Receive(int, char*, int);
-	void ReceiveFile(int, std::string);
+	void ReceiveFile(std::string filePath, int port);
 
 	// Close socket
 	void CloseSocket();
+
+	// Headers that will be used to ensure file transfer integrity
+	struct UDPFTSendHeader {
+		uint16_t totalFileSize = 0;
+		uint16_t packetNum = 0;
+		uint16_t bytesInPacket;
+	};
+
+	struct UDPFTReceiveHeader {
+		uint8_t resendPacket = 0; // 0 for false, anything else for true
+		uint16_t lastPacketReceived = 0;
+	};
 
 protected:
 
