@@ -10,19 +10,27 @@ class UdpWizard {
 
 public:
 	
-	UdpWizard();
+	UdpWizard(int);
 	UdpWizard(UdpWizard&);
 	UdpWizard& operator=(UdpWizard&);
 	~UdpWizard();
+
+	// Getters
+	int GetSocket() { return mSocket; }
 
 	// Data Sender
 	void Send(std::string, int, const char*, int);
 	void SendFile(std::string filePath, std::string destIP, int destPort);
 	void Broadcast(std::string, int, const char*, int);
+	const char* const GetSelfIP() const { return  inet_ntoa(mSelfAddress.sin_addr); }
+	int GetSelfPort() { return mSelfAddress.sin_port; }
 
 	// Data Receiver
-	void Receive(int, char*, int);
+	void Receive(char*, int);
 	void ReceiveFile(std::string filePath, int port);
+	const char* const GetOtherIP() const { return inet_ntoa(mOtherAddress.sin_addr); }
+	int GetOtherPort() { return mOtherAddress.sin_port; }
+	void RespondToSender(const char* data, int dataLen);
 
 	// Close socket
 	void CloseSocket();
@@ -42,8 +50,8 @@ public:
 protected:
 
 	// Build usable address struct
-	void BuildSendAddress(std::string, int);
-	void BuildReceiveAddress(int);
+	void BuildSelfAddress(int);
+	void BuildOtherAddress(std::string, int);
 
 	// Set permission for broadcasting
 	void SetBroadcastPermission();
@@ -52,8 +60,14 @@ protected:
 	void InitSocket();
 	void BindSocket();
 
-	struct sockaddr_in mAddress;
+	// Members
+	struct sockaddr_in mSelfAddress;
+	struct sockaddr_in mOtherAddress;
 	int mSocket = 0;
+	bool mSocketBound = false;
+	bool mSocketInitizialized = false;
+	bool mSelfAddressBuilt = false;
+	bool mOtherAddressBuilt = false;
 	int mBroadcastPermission = 1;
 };
 

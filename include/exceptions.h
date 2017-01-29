@@ -4,12 +4,12 @@
 #include <exception>
 #include <string>
 
-class UdpBcasterError : public std::exception {
+class UdpWizardError : public std::exception {
 
 public:
 	
-	UdpBcasterError(std::string m): message(m) {}
-	const char * what() { return message.c_str(); }
+	UdpWizardError(std::string m): message(m) {}
+	const char* what() { return message.c_str(); }
 
 protected:
 	
@@ -17,29 +17,29 @@ protected:
 
 };
 
-class SendError : public UdpBcasterError {
+class SendError : public UdpWizardError {
 public:
-	SendError(): UdpBcasterError("Error occured while sending datagram") {}
+	SendError(): UdpWizardError("Error occured while sending datagram") {}
 };
 
-class ReceiveError : public UdpBcasterError {
+class ReceiveError : public UdpWizardError {
 public:
-	ReceiveError(): UdpBcasterError("Error occured while receiving datagram") {}
+	ReceiveError(): UdpWizardError("Error occured while receiving datagram") {}
 };
 
-class SocketPermissionError : public UdpBcasterError {
+class SocketPermissionError : public UdpWizardError {
 public:
-	SocketPermissionError(): UdpBcasterError("Error occured setting socket broadcast permissions") {}
+	SocketPermissionError(): UdpWizardError("Error occured setting socket broadcast permissions") {}
 };
 
-class SocketInitError : public UdpBcasterError {
+class SocketInitError : public UdpWizardError {
 public:
-	SocketInitError(): UdpBcasterError("Error encountered while initializing socket") {}
+	SocketInitError(): UdpWizardError("Error encountered while initializing socket") {}
 };
 
-class SocketBindError : public UdpBcasterError {
+class SocketBindError : public UdpWizardError {
 public:
-	SocketBindError(): UdpBcasterError("Error encountered while binding socket") {}
+	SocketBindError(): UdpWizardError("Error encountered while binding socket") {}
 };
 
 #endif

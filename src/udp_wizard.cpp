@@ -6,17 +6,23 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include "../include/udp_wizard.h"
 #include "../include/exceptions.h"
 
-UdpWizard::UdpWizard() {}
+UdpWizard::UdpWizard(int p){
+	InitSocket();
+	BuildSelfAddress(p);
+	BindSocket();
+}
+
 UdpWizard::~UdpWizard() {}
 
 void UdpWizard::Send(std::string destIP, int destPort, const char* sendString, int sendStringLen)
 {
 	InitSocket();
-	BuildSendAddress(destIP, destPort);
-	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mAddress, sizeof(mAddress)) != sendStringLen){
+	BuildOtherAddress(destIP, destPort);
+	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mOtherAddress, sizeof(mOtherAddress)) != sendStringLen){
 		throw SendError();
 	}
 }
@@ -30,23 +36,21 @@ void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 
 void UdpWizard::Broadcast(std::string destIP, int destPort, const char* sendString, int sendStringLen)
 {
-	InitSocket();
+	if (!mSocketInitizialized) InitSocket();
 	SetBroadcastPermission();
-	BuildSendAddress(destIP, destPort);
-	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mAddress, sizeof(mAddress)) != sendStringLen){
+	BuildOtherAddress(destIP, destPort);
+	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mOtherAddress, sizeof(mOtherAddress)) != sendStringLen){
 		throw SendError();
 	}
 }
 
 
-void UdpWizard::Receive(int port, char* buffer, int bufferLen)
+void UdpWizard::Receive(char* buffer, int bufferLen)
 {
-	struct sockaddr_in senderAddress;
-	socklen_t senderLen = sizeof(senderAddress);
-	InitSocket();
-	BuildReceiveAddress(port);
-	BindSocket();
-	if (recvfrom(mSocket, buffer, bufferLen, 0, (struct sockaddr*) &senderAddress, &senderLen) == -1){
+	memset(&mSelfAddress, 0, sizeof(mSelfAddress));
+	socklen_t senderLen = sizeof(mOtherAddress);
+	if (!mSocketInitizialized) InitSocket();
+	if (recvfrom(mSocket, buffer, bufferLen, 0, (struct sockaddr*) &mOtherAddress, &senderLen) == -1){
 		throw ReceiveError();
 	}
 }
@@ -59,25 +63,35 @@ void UdpWizard::ReceiveFile(std::string destFilePath, int port)
 	// Repeat until full file has been read
 }
 
+void UdpWizard::RespondToSender(const char* data, int dataLen)
+{
+	if (sendto(mSocket, data, dataLen, 0, (struct sockaddr*) &mOtherAddress, sizeof(mOtherAddress)) == -1){
+		throw SendError();
+	}
+}
+
 void UdpWizard::CloseSocket()
 {
+	mSocketBound = false;
 	close(mSocket);
 }
 
-void UdpWizard::BuildSendAddress(std::string destIP, int destPort)
+void UdpWizard::BuildOtherAddress(std::string destIP, int destPort)
 {
-	memset(&mAddress, 0, sizeof(mAddress));
-	mAddress.sin_family = AF_INET;
-	mAddress.sin_addr.s_addr = inet_addr(destIP.c_str());
-	mAddress.sin_port = htons(destPort);
+	memset(&mOtherAddress, 0, sizeof(mOtherAddress));
+	mOtherAddress.sin_family = AF_INET;
+	mOtherAddress.sin_addr.s_addr = inet_addr(destIP.c_str());
+	mOtherAddress.sin_port = htons(destPort);
+	mOtherAddressBuilt = true;
 }
 
-void UdpWizard::BuildReceiveAddress(int port)
+void UdpWizard::BuildSelfAddress(int port)
 {
-	memset(&mAddress, 0, sizeof(mAddress));
-	mAddress.sin_family = AF_INET;
-	mAddress.sin_port = htons(port);
-	mAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+	memset(&mSelfAddress, 0, sizeof(mSelfAddress));
+	mSelfAddress.sin_family = AF_INET;
+	mSelfAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+	mSelfAddress.sin_port = htons(port);
+	mSelfAddressBuilt = true;
 }
 
 void UdpWizard::SetBroadcastPermission()
@@ -89,14 +103,21 @@ void UdpWizard::SetBroadcastPermission()
 
 void UdpWizard::InitSocket()
 {
-	mSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (mSocket == -1) throw SocketInitError();
+	mSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (mSocket == -1){
+		mSocketInitizialized = false;
+		throw SocketInitError();
+	}
+	mSocketInitizialized = true;
 }
 
 void UdpWizard::BindSocket()
 {
-	if (bind(mSocket, (struct sockaddr*) &mAddress, sizeof(mAddress)) == -1){
+	if (bind(mSocket, (struct sockaddr*) &mSelfAddress, sizeof(mSelfAddress)) == -1){
+		std::cout << "Error: " << errno << std::endl;
+		mSocketBound = false;
 		throw SocketBindError();
 	}
+	mSocketBound = true;
 }
 

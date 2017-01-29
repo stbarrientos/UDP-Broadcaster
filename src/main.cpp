@@ -11,24 +11,46 @@ int main(int argc, char* argv[])
 {
 	if (argc > 1 && strcmp(argv[1], "send") == 0){
 		validateSendArgs(argc,argv);
-		UdpWizard ub;
-		std::string data = "Hello World";
-		std::string ip = argv[2];
-		int port = std::stoi(argv[3]);
-		std::cout << "Sending To " << ip << ":" << port << std::endl;
-		ub.Send(ip, port, data.c_str(), data.size());
-		std::cout << "Sent" << std::endl;
-		ub.CloseSocket();
-	} else if (argc > 1 && strcmp(argv[1], "recv") == 0){
-		validateRecvArgs(argc, argv);
-		UdpWizard ub;
+		UdpWizard ub(5555);
 		char buffer[512];
 		memset(&buffer, 0, 512);
-		int port = std::stoi(argv[2]);
-		std::cout << "Listening On Port " << port << std::endl;
-		ub.Receive(port, buffer, 512);
-		ub.CloseSocket();
+		std::string data = "Ping";
+		std::string ip = argv[2];
+		int port = std::stoi(argv[3]);
+
+		// Send ping
+		std::cout << "Sending To " << ip << ":" << ntohs(port) << std::endl;
+		ub.Send(ip, port, data.c_str(), data.size());
+
+		// Listen for pong
+		std::cout << "Listening On Port " << ub.GetSelfPort() << std::endl;
+		ub.Receive(buffer, 512);
+		std::cout << "Sent From " << ub.GetOtherIP() << ":" << ub.GetOtherPort() << std::endl;
 		std::cout << "Received: " << buffer << std::endl;
+
+		// Close
+		ub.CloseSocket();
+
+	} else if (argc > 1 && strcmp(argv[1], "recv") == 0){
+		validateRecvArgs(argc, argv);
+		UdpWizard ub(std::stoi(argv[2]));
+		char buffer[512];
+		std::string data = "Pong";
+		memset(&buffer, 0, 512);
+
+		// Listen for ping
+		std::cout << "Listening On Port " << ub.GetSelfPort() << std::endl;
+		ub.Receive(buffer, 512);
+		std::cout << "Received: " << buffer << ". Sent Using Socket " << ub.GetSocket() << std::endl;
+
+		// Send pong
+		std::string ip = ub.GetOtherIP();
+		int port = ub.GetOtherPort();
+		std::cout << "Sending To " << ip << ":" << ntohs(port) << std::endl;
+		ub.RespondToSender(data.c_str(), data.size());
+
+		// Close
+		ub.CloseSocket();
 	} else {
 		printUsage();
 		return 1;
