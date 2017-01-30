@@ -10,6 +10,7 @@ void printUsage();
 int main(int argc, char* argv[])
 {
 	if (argc > 1 && strcmp(argv[1], "send") == 0){
+		/*
 		validateSendArgs(argc,argv);
 		UdpWizard ub(5555);
 		char buffer[512];
@@ -30,8 +31,16 @@ int main(int argc, char* argv[])
 
 		// Close
 		ub.CloseSocket();
+		*/
+
+		UdpWizard ub(5555);
+		std::string ip = argv[2];
+		int port = std::stoi(argv[3]);
+		std::cout << "Sending" << std::endl;
+		ub.SendFile("./send_me.txt", ip, port);
 
 	} else if (argc > 1 && strcmp(argv[1], "recv") == 0){
+		/*
 		validateRecvArgs(argc, argv);
 		UdpWizard ub(std::stoi(argv[2]));
 		char buffer[512];
@@ -51,6 +60,13 @@ int main(int argc, char* argv[])
 
 		// Close
 		ub.CloseSocket();
+		*/
+
+		UdpWizard ub(std::stoi(argv[2]));
+		std::cout << "Listening..." << std::endl;
+		ub.ReceiveFile("./receive_me.txt");
+
+
 	} else {
 		printUsage();
 		return 1;

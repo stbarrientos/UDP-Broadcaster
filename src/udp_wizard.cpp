@@ -1,12 +1,13 @@
 #include <iostream>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fstream>
 #include "../include/udp_wizard.h"
 #include "../include/exceptions.h"
 
@@ -20,7 +21,7 @@ UdpWizard::~UdpWizard() {}
 
 void UdpWizard::Send(std::string destIP, int destPort, const char* sendString, int sendStringLen)
 {
-	InitSocket();
+	if (!mSocketInitizialized) InitSocket();
 	BuildOtherAddress(destIP, destPort);
 	if (sendto(mSocket, sendString, sendStringLen, 0, (struct sockaddr*) &mOtherAddress, sizeof(mOtherAddress)) != sendStringLen){
 		throw SendError();
@@ -29,9 +30,50 @@ void UdpWizard::Send(std::string destIP, int destPort, const char* sendString, i
 
 void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 {
-	// First, prepare a datagram with the header and the first chunk of the file
-	// Wait for recipient response before sending the next file
-	// Repeat until all of the file has been sent
+	using namespace std;
+	UDPFTSendData sendData;
+	char responseBuffer[sizeof(UDPFTResponseData)];
+
+	// Read the first chunk of data from the file.
+	ifstream file;
+	long fileSize;
+	file.open(filePath.c_str(), ios::binary);
+
+	// Get File Size
+	file.seekg(0, ios::end);
+	fileSize = file.tellg();
+	file.seekg(0, ios::beg);
+
+	// Determine how many packets need to be sent
+	long totalNumPackets = (fileSize % FT_DATA_PAYLOAD_SIZE == 0) ? fileSize / FT_DATA_PAYLOAD_SIZE : fileSize / FT_DATA_PAYLOAD_SIZE + 1;
+	long i = 0;
+	while (i < totalNumPackets){
+
+		// Prepare data
+		sendData.totalFileSize = fileSize;
+		sendData.packetNum = i + 1;
+		memset(sendData.payload, 0, FT_DATA_PAYLOAD_SIZE);
+
+		// Read the next chunk into the payload
+		file.read(sendData.payload, FT_DATA_PAYLOAD_SIZE);
+
+		// Send data
+		Send(destIP, destPort, reinterpret_cast<char*>(&sendData), sizeof(sendData));
+
+		// Wait for recipient response before sending the next file
+		try {
+			Receive(responseBuffer, sizeof(UDPFTResponseData));
+		} catch (SendError& e) {
+			cout << "Recipient did not recieve packet, resending.." << endl;
+			continue;
+		}
+
+		// Read recipient response
+		UDPFTResponseData* response = reinterpret_cast<UDPFTResponseData*>(responseBuffer);
+		cout << "Recipient received packet #" << response->lastPacketReceived << endl;
+		memset(responseBuffer, 0, sizeof(UDPFTResponseData));
+		i++;
+	}
 }
 
 void UdpWizard::Broadcast(std::string destIP, int destPort, const char* sendString, int sendStringLen)
@@ -47,7 +89,6 @@ void UdpWizard::Broadcast(std::string destIP, int destPort, const char* sendStri
 
 void UdpWizard::Receive(char* buffer, int bufferLen)
 {
-	memset(&mSelfAddress, 0, sizeof(mSelfAddress));
 	socklen_t senderLen = sizeof(mOtherAddress);
 	if (!mSocketInitizialized) InitSocket();
 	if (recvfrom(mSocket, buffer, bufferLen, 0, (struct sockaddr*) &mOtherAddress, &senderLen) == -1){
@@ -55,12 +96,38 @@ void UdpWizard::Receive(char* buffer, int bufferLen)
 	}
 }
 
-void UdpWizard::ReceiveFile(std::string destFilePath, int port)
+void UdpWizard::ReceiveFile(std::string destFilePath)
 {
-	// Listen for incoming packet
-	// Read the header to see how many packets to prepare for, and store the first chunk in the file specified
-	// Send message telling that packet has been received and listen for more messages
-	// Repeat until full file has been read
+	using namespace std;
+	ofstream file;
+	file.open(destFilePath.c_str(), ios::binary);
+	int bufferLen = sizeof(UDPFTSendData);
+	char buffer[bufferLen];
+	long totalNumOfPackets = -1;
+	long i = 0;
+	UDPFTResponseData responseData;
+	do {
+		Receive(buffer, bufferLen);
+		UDPFTSendData* sentData = reinterpret_cast<UDPFTSendData*>(buffer);
+		cout << "Received Packet #" << sentData->packetNum << endl;
+
+		// Find totoal num of packets expected if we haven't already
+		if (totalNumOfPackets == -1) totalNumOfPackets = (sentData->totalFileSize % FT_DATA_PAYLOAD_SIZE == 0) ? sentData->totalFileSize / FT_DATA_PAYLOAD_SIZE : sentData->totalFileSize / FT_DATA_PAYLOAD_SIZE + 1;
+
+		// Write to file, but make sure not to include garbage included in last packet
+		if (i == totalNumOfPackets - 1){
+			file.write(sentData->payload, sentData->totalFileSize % FT_DATA_PAYLOAD_SIZE);
+		} else {
+			file.write(sentData->payload, FT_DATA_PAYLOAD_SIZE);
+		}
+
+		// Prepare the response
+		responseData.lastPacketReceived = sentData->packetNum;
+
+		// Respond
+		RespondToSender(reinterpret_cast<char*>(&responseData), sizeof(responseData));
+		i = responseData.lastPacketReceived;
+	} while (i < totalNumOfPackets);
 }
 
 void UdpWizard::RespondToSender(const char* data, int dataLen)

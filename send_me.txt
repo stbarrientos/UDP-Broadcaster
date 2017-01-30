@@ -1,0 +1,5 @@
+this is at least 512 chars. No, I didn't count but I'm fairly certain that this is 512 chars based on my eyeball estimate.
+That was a newline, so hopefully that makes it across to the new server, I guess we will see. BUt yea this should be about 512.
+Well damn according to sublime that was only about 260 so I'm going to have to double my efforts. All I can say is that the people that use this better be super grateful,
+otherwise I'm gonna lose my mind. That said, this has taught me a lot about UDP that I didn't realize before. And by building reliability into it,
+I think I've learned some TCP basics as well. That said, TCP is for chumps. Woohoo! That's over 512!
