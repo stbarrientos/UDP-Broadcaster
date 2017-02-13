@@ -46,6 +46,8 @@ protected:
 
 	// Initialize Socket
 	void InitSocket();
+	bool SetSocketSendTimeout(struct timeval);
+	bool SetSocketReceiveTimeout(struct timeval);
 	void BindSocket();
 
 	const static int FT_DATA_PAYLOAD_SIZE = 512;

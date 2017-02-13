@@ -14,6 +14,11 @@
 UdpWizard::UdpWizard(int p){
 	InitSocket();
 	BuildSelfAddress(p);
+	// struct timeval timeout;
+ //    timeout.tv_sec = 1;
+ //    timeout.tv_usec = 0;
+	// SetSocketReceiveTimeout(timeout);
+	// SetSocketSendTimeout(timeout));
 	BindSocket();
 }
 
@@ -34,6 +39,13 @@ void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 	UDPFTSendData sendData;
 	char responseBuffer[sizeof(UDPFTResponseData)];
 
+	// Set the timeout, we need it for reliable file transfer
+	struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+	SetSocketReceiveTimeout(timeout);
+	SetSocketSendTimeout(timeout);
+
 	// Read the first chunk of data from the file.
 	ifstream file;
 	long fileSize;
@@ -47,6 +59,10 @@ void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 	// Determine how many packets need to be sent
 	long totalNumPackets = (fileSize % FT_DATA_PAYLOAD_SIZE == 0) ? fileSize / FT_DATA_PAYLOAD_SIZE : fileSize / FT_DATA_PAYLOAD_SIZE + 1;
 	long i = 0;
+
+	// Keep track if the iteration is successful, we do not want to continue reading if a packet was dropped
+	bool successfulSend = true;
+
 	while (i < totalNumPackets){
 
 		// Prepare data
@@ -55,16 +71,27 @@ void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 		memset(sendData.payload, 0, FT_DATA_PAYLOAD_SIZE);
 
 		// Read the next chunk into the payload
-		file.read(sendData.payload, FT_DATA_PAYLOAD_SIZE);
-
+		if (successfulSend){
+			file.read(sendData.payload, FT_DATA_PAYLOAD_SIZE);
+			cout << "File Read" << endl;
+		}
+		cout << sendData.payload << endl;
 		// Send data
-		Send(destIP, destPort, reinterpret_cast<char*>(&sendData), sizeof(sendData));
+		try {
+			cout << "Preparing to send" << endl;
+			Send(destIP, destPort, reinterpret_cast<char*>(&sendData), sizeof(sendData));
+			successfulSend = true;
+		} catch (SendError& e) {
+			cout << "Recipient did not recieve packet, resending.." << endl;
+			successfulSend = false;
+			continue;
+		}
 
 		// Wait for recipient response before sending the next file
 		try {
 			Receive(responseBuffer, sizeof(UDPFTResponseData));
-		} catch (SendError& e) {
-			cout << "Recipient did not recieve packet, resending.." << endl;
+		} catch (ReceiveError& e) {
+			cout << "Recipient did not respond, resending.." << endl;
 			continue;
 		}
 
@@ -106,6 +133,14 @@ void UdpWizard::ReceiveFile(std::string destFilePath)
 	long totalNumOfPackets = -1;
 	long i = 0;
 	UDPFTResponseData responseData;
+
+	// Set the timeout, we need it for reliable file transfer
+	struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+	SetSocketReceiveTimeout(timeout);
+	SetSocketSendTimeout(timeout);
+
 	do {
 		Receive(buffer, bufferLen);
 		UDPFTSendData* sentData = reinterpret_cast<UDPFTSendData*>(buffer);
@@ -176,6 +211,25 @@ void UdpWizard::InitSocket()
 		throw SocketInitError();
 	}
 	mSocketInitizialized = true;
+}
+
+bool UdpWizard::SetSocketSendTimeout(struct timeval timeout)
+{
+	if (!mSocketInitizialized) return false;
+	if (setsockopt (mSocket, SOL_SOCKET, SO_SNDTIMEO, (const void*) &timeout, sizeof (timeout)) < 0){
+		std::cout << errno << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool UdpWizard::SetSocketReceiveTimeout(struct timeval timeout)
+{
+	if (!mSocketInitizialized) return false;
+	if (setsockopt (mSocket, SOL_SOCKET, SO_RCVTIMEO, (const void*) &timeout, sizeof (timeout)) < 0){
+		return false;
+	}
+	return true;
 }
 
 void UdpWizard::BindSocket()
