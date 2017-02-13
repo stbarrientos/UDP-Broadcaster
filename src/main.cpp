@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include "../include/udp_wizard.h"
+#include "../include/hub.h"
 
 void validateSendArgs(int argc, char** argv);
 void validateRecvArgs(int argc, char** argv);

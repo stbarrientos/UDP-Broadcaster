@@ -33,6 +33,13 @@ void UdpWizard::Send(std::string destIP, int destPort, const char* sendString, i
 	}
 }
 
+void UdpWizard::Send(sockaddr_in* address, const char* data, int dataLen)
+{
+	if (sendto(mSocket, data, dataLen, 0, (struct sockaddr*) address, sizeof(sockaddr_in)) == -1){
+		throw SendError();
+	}
+}
+
 void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 {
 	using namespace std;
