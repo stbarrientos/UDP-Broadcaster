@@ -10,15 +10,11 @@
 #include <fstream>
 #include "../include/udp_wizard.h"
 #include "../include/exceptions.h"
+#include "../include/message_structs.h"
 
 UdpWizard::UdpWizard(int p){
 	InitSocket();
 	BuildSelfAddress(p);
-	// struct timeval timeout;
- //    timeout.tv_sec = 1;
- //    timeout.tv_usec = 0;
-	// SetSocketReceiveTimeout(timeout);
-	// SetSocketSendTimeout(timeout));
 	BindSocket();
 }
 
@@ -43,6 +39,7 @@ void UdpWizard::Send(sockaddr_in* address, const char* data, int dataLen)
 void UdpWizard::SendFile(std::string filePath, std::string destIP, int destPort)
 {
 	using namespace std;
+	using namespace UdpWizardMessageTypes;
 	UDPFTSendData sendData;
 	char responseBuffer[sizeof(UDPFTResponseData)];
 
@@ -133,6 +130,7 @@ void UdpWizard::Receive(char* buffer, int bufferLen)
 void UdpWizard::ReceiveFile(std::string destFilePath)
 {
 	using namespace std;
+	using namespace UdpWizardMessageTypes;
 	ofstream file;
 	file.open(destFilePath.c_str(), ios::binary);
 	int bufferLen = sizeof(UDPFTSendData);
